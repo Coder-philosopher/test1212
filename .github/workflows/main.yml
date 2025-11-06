@@ -1,0 +1,56 @@
+name: Android Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout your code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Java for Android build
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      # 3️⃣ Setup Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 4️⃣ Install npm dependencies
+      - name: Install Dependencies
+        run: npm ci
+
+      # 5️⃣ Install Capacitor CLI (required for `npx cap sync`)
+      - name: Install Capacitor CLI
+        run: npm install @capacitor/cli --save-dev
+
+      # 6️⃣ Build your React web app
+      - name: Build Web
+        run: npm run build
+
+      # 7️⃣ Sync Capacitor (copies web assets into android/ folder)
+      - name: Sync Capacitor
+        run: npx cap sync
+
+      # 8️⃣ Build the Android APK using Gradle
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      # 9️⃣ Upload the generated APK as an artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
